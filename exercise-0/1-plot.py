@@ -1,12 +1,8 @@
 import matplotlib.pyplot as plt
+import pandas as pd
 
-# Sample data
-x = [1, 2, 3, 4, 5]
-y = [2, 4, 5, 4, 6]
+df = pd.read_csv("./x.csv")
+variables = df.var().sort_values(ascending=False).take([0,1]).keys().to_list()
 
-# Create scatterplot
-plt.scatter(x, y)
-plt.xlabel('X axis')
-plt.ylabel('Y axis')
-plt.title('Simple Scatterplot')
+df.plot(x=variables[0], y=variables[1], kind="scatter")
 plt.show()
