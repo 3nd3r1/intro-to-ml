@@ -9,6 +9,7 @@ pkgs.mkShell {
         pandas
         numpy
         matplotlib
+        seaborn
       ]
     ))
   ];
