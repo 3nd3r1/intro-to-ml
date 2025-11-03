@@ -21,7 +21,8 @@ if not isinstance(df_t84_mean, pd.DataFrame):
 array_t84_mean = df_t84_mean.values
 if not isinstance(array_t84_mean, np.ndarray):
     raise TypeError("Something went wrong")
-print(array_t84_mean.mean())
+print("Mean: "+array_t84_mean.mean())
+print("Std: "+array_t84_mean.std())
 
 # Task d
 plt.figure()
