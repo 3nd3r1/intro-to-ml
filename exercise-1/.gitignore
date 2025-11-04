@@ -1,4 +1,3 @@
-train.csv
-test.csv
-dummy_predictions.csv
+**/*.csv
+
 .direnv/
