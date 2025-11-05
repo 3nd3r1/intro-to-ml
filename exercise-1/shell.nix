@@ -10,6 +10,8 @@ pkgs.mkShell {
         numpy
         matplotlib
         seaborn
+        scikit-learn
+        jinja2
       ]
     ))
   ];
