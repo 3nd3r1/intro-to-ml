@@ -6,7 +6,7 @@ import pandas as pd
 df_train = pd.read_csv("./train_syn.csv")
 
 
-plt.subplots(2, 3)
+plt.subplots(2, 3, figsize=(12, 8))
 
 for i, deg in enumerate([0, 1, 2, 3, 4, 8]):
     pol = np.polynomial.Polynomial.fit(df_train["x"], df_train["y"], deg=deg)
