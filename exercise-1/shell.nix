@@ -12,6 +12,7 @@ pkgs.mkShell {
         seaborn
         scikit-learn
         jinja2
+        statsmodels
       ]
     ))
   ];
