@@ -3,8 +3,6 @@ import pandas as pd
 import statsmodels.api as sm
 
 
-results = []
-
 plt.subplots(2, 2, figsize=(10, 8))
 for i in range(1, 5):
     data = pd.read_csv(f"d{i}.csv")
