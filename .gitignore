@@ -1,3 +1,4 @@
 pdfs/
 .direnv/
 **/*.csv
+**/*.png
