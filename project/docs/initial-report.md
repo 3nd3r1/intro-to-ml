@@ -683,6 +683,19 @@ Kaggle Score: 0.75238
 
 Slightly worse than Submission #1.
 
+### 5.3 Submission 3
+
+#### 5.3.1 Approach
+
+Frustrated by the multi-class results, I tried a really quick two-stage approach:
+- Stage 1: Binary classifier using LR Lasso
+- Stage 2: Event-only classifier (Ia, Ib, II) using LR Ridge trained only on event samples
+
+#### 5.3.2 Result
+
+Kaggle Score: 0.76921
+
+YES!
 
 ## 6. Discussion and Next Steps
 
