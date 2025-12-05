@@ -361,9 +361,14 @@ However, we will let models handle this (Lasso, Ridge).
 
 ## 4. Modeling
 
-### 4.1 Model Selection Rationale
+### 4.1 Validation
 
-Fill later
+We use stratified 5-fold cross-validation to evaluate models.
+
+With 450 training samples and 5 folds:
+
+- Each fold uses 360 samples for training 90 for validation
+- We report mean accuracy and standard deviation
 
 ### 4.2 Models
 
@@ -384,22 +389,89 @@ Fill later
 
 We will use k-fold cross-validation with 5 folds.
 
-## 5. Results
+## 5. Submissions
 
-### 5.1 Model Comparison
+### 5.1 Submission 1
 
-## 6. Kaggle Submission
+#### 5.1.1 Approach
 
-### 6.1 Submission Approach
+For the first submission we only predicted the binary class2.
 
-### 6.2 Preliminary Results
+The hyperparameters:
 
-## 7. Discussion and Next Steps
+- C = 1.0 balanced level of regularization
+- solver = saga because it works well with many features
+- max_iter = 5000 to ensure converging
+- we judge with accuracy
 
-### 7.1 Current Status
+We tested three models for binary classification using 5-fold cross-validation:
 
-### 7.2 Challenges
+```python
+cv = StratifiedKFold(n_splits=5, shuffle=True)
 
-### 7.3 Planned Improvements
+features = [
+    col
+    for col in df_train.columns
+    if col not in ["id", "date", "class4", "partlybad", "class2"]
+]
+
+logreg_ridge_pipeline = Pipeline([
+    ("scaler", StandardScaler()),
+    ("clf", LogisticRegression(penalty="l2", C=1.0, max_iter=5000)),
+])
+logreg_ridge_scores = cross_val_score(
+    logreg_ridge_pipeline, df_x_train, df_y_train, cv=cv, scoring="accuracy"
+)
+print(
+    f"Logistic Regression (Ridge): {logreg_ridge_scores.mean():.3f} (std {logreg_ridge_scores.std():.3f})"
+)
+
+logreg_lasso_pipeline = Pipeline([
+    ("scaler", StandardScaler()),
+    ("clf", LogisticRegression(penalty="l1", solver="saga", C=1.0, max_iter=5000)),
+])
+logreg_lasso_scores = cross_val_score(
+    logreg_lasso_pipeline, df_x_train, df_y_train, cv=cv, scoring="accuracy"
+)
+print(
+    f"Logistic Regression (Lasso): {logreg_lasso_scores.mean():.3f} (std {logreg_lasso_scores.std():.3f})"
+)
+
+rf = RandomForestClassifier(n_estimators=100)
+rf_scores = cross_val_score(rf, df_x_train, df_y_train, cv=cv, scoring="accuracy")
+
+print(f"Random Forest: {rf_scores.mean():.3f} (std {rf_scores.std():.3f})")
+```
+
+```text
+Logistic Regression (Ridge): 0.860 (std 0.044)
+Logistic Regression (Lasso): 0.884 (std 0.026)
+Random Forest: 0.860 (std 0.030)
+```
+
+LR Lasso performed best, probably because it zeroed the redundant features.
+Random Forest underperformed, maybe due to the small dataset.
+
+#### 5.1.2 Submission
+
+```python
+model = Pipeline(
+    [
+        ("scaler", StandardScaler()),
+        ("clf", LogisticRegression(penalty="l1", solver="saga", C=1.0, max_iter=5000)),
+    ]
+)
+
+model.fit(df_x_train, df_y_train)
+
+probs = model.predict_proba(df_x_test)[:, 1]
+
+class4_pred = np.where(probs > 0.5, "II", "nonevent")
+
+submission = pd.DataFrame({"id": df_test["id"], "class4": class4_pred, "p": probs})
+submission.to_csv("./data/submission1.csv", index=False)
+```
+
+## 6. Discussion and Next Steps
 
 ## References
