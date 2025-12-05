@@ -400,9 +400,10 @@ For the first submission we only predicted the binary class2.
 The hyperparameters:
 
 - C = 1.0 balanced level of regularization
-- solver = saga because it works well with many features
+- solver = saga works well with many features and required for Lasso
 - max_iter = 5000 to ensure converging
-- we judge with accuracy
+- we score with accuracy
+
 
 We tested three models for binary classification using 5-fold cross-validation:
 
@@ -454,6 +455,10 @@ Random Forest underperformed, maybe due to the small dataset.
 
 #### 5.1.2 Submission
 
+Based on cv results, we select LR with Lasso.
+Since our model only does binary classification,
+we predict "II" for all event days since it's the most common.
+
 ```python
 model = Pipeline(
     [
@@ -471,6 +476,12 @@ class4_pred = np.where(probs > 0.5, "II", "nonevent")
 submission = pd.DataFrame({"id": df_test["id"], "class4": class4_pred, "p": probs})
 submission.to_csv("./data/submission1.csv", index=False)
 ```
+
+#### 5.1.3 Result
+
+Kaggle Score: 0.75
+
+Binary classification works well, but always predicting "II" probably hurts the multi-class accuracy.
 
 ## 6. Discussion and Next Steps
 
