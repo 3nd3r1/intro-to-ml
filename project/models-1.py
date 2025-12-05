@@ -39,7 +39,7 @@ logreg_ridge_scores = cross_val_score(
 )
 
 print(
-    f"Logistic Regression (Ridge): {logreg_ridge_scores.mean():.3f} (+/- {logreg_ridge_scores.std():.3f})"
+    f"Logistic Regression (Ridge): {logreg_ridge_scores.mean():.3f} (std {logreg_ridge_scores.std():.3f})"
 )
 
 # Logistic Regression with Lasso
@@ -57,10 +57,10 @@ logreg_lasso_scores = cross_val_score(
     logreg_lasso_pipeline, df_x_train, df_y_train, cv=cv, scoring="accuracy"
 )
 print(
-    f"Logistic Regression (Lasso): {logreg_lasso_scores.mean():.3f} (+/- {logreg_lasso_scores.std():.3f})"
+    f"Logistic Regression (Lasso): {logreg_lasso_scores.mean():.3f} (std {logreg_lasso_scores.std():.3f})"
 )
 
 # Random Forest
 rf = RandomForestClassifier(n_estimators=100)
 rf_scores = cross_val_score(rf, df_x_train, df_y_train, cv=cv, scoring="accuracy")
-print(f"Random Forest: {rf_scores.mean():.3f} (+/- {rf_scores.std():.3f})")
+print(f"Random Forest: {rf_scores.mean():.3f} (std {rf_scores.std():.3f})")
