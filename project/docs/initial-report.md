@@ -404,7 +404,6 @@ The hyperparameters:
 - max_iter = 5000 to ensure converging
 - we score with accuracy
 
-
 We tested three models for binary classification using 5-fold cross-validation:
 
 ```python
@@ -415,6 +414,10 @@ features = [
     for col in df_train.columns
     if col not in ["id", "date", "class4", "partlybad", "class2"]
 ]
+
+df_x_train = df_train[features]
+df_y_train = df_train["class2"]
+df_x_test = df_test[features]
 
 logreg_ridge_pipeline = Pipeline([
     ("scaler", StandardScaler()),
@@ -479,9 +482,207 @@ submission.to_csv("./data/submission1.csv", index=False)
 
 #### 5.1.3 Result
 
-Kaggle Score: 0.75
+Kaggle Score: 0.75712
 
 Binary classification works well, but always predicting "II" probably hurts the multi-class accuracy.
+
+### 5.2 Submission 2
+
+#### 5.2.1 Approach
+
+To improve the score let's try to predict all four classes with the same models.
+
+The hyperparameters remained the same as Submission #1:
+
+```python
+cv = StratifiedKFold(n_splits=5, shuffle=True)
+
+features = [
+    col
+    for col in df_train.columns
+    if col not in ["id", "date", "class4", "partlybad", "class2"]
+]
+
+df_x_train = df_train[features]
+df_y_train = df_train["class4"]
+df_x_test = df_test[features]
+
+logreg_ridge_pipeline = Pipeline([
+    ("scaler", StandardScaler()),
+    ("clf", LogisticRegression(penalty="l2", C=1.0, max_iter=5000)),
+])
+
+logreg_lasso_pipeline = Pipeline([
+    ("scaler", StandardScaler()),
+    ("clf", LogisticRegression(penalty="l1", solver="saga", C=1.0, max_iter=5000)),
+])
+
+rf = RandomForestClassifier(n_estimators=100)
+
+logreg_ridge_scores = cross_val_score(
+    logreg_ridge_pipeline, df_x_train, df_y_train, cv=cv, scoring="accuracy"
+)
+logreg_lasso_scores = cross_val_score(
+    logreg_lasso_pipeline, df_x_train, df_y_train, cv=cv, scoring="accuracy"
+)
+rf_scores = cross_val_score(rf, df_x_train, df_y_train, cv=cv, scoring="accuracy")
+
+print(
+    f"Logistic Regression (Ridge): {logreg_ridge_scores.mean():.3f} (std {logreg_ridge_scores.std():.3f})"
+)
+print(
+    f"Logistic Regression (Lasso): {logreg_lasso_scores.mean():.3f} (std {logreg_lasso_scores.std():.3f})"
+)
+print(f"Random Forest: {rf_scores.mean():.3f} (std {rf_scores.std():.3f})")
+```
+
+```text
+Logistic Regression (Ridge): 0.649 (std 0.023)
+Logistic Regression (Lasso): 0.660 (std 0.029)
+Random Forest: 0.656 (std 0.032)
+```
+
+As expected, multi-class is alot harder than binary.
+Let's look more closely at class performance to see if we can do something.
+
+```python
+from sklearn.model_selection import cross_val_predict
+from sklearn.metrics import classification_report, confusion_matrix
+
+logreg_ridge_y_pred = cross_val_predict(
+    logreg_ridge_pipeline, df_x_train, df_y_train, cv=cv
+)
+logreg_lasso_y_pred = cross_val_predict(
+    logreg_lasso_pipeline, df_x_train, df_y_train, cv=cv
+)
+rf_y_pred = cross_val_predict(rf, df_x_train, df_y_train, cv=cv)
+
+print("Logistic Regression (Ridge):")
+print(f"Score: {logreg_ridge_scores.mean():.3f} (std {logreg_ridge_scores.std():.3f})")
+print("Classification report:")
+print(classification_report(df_y_train, logreg_ridge_y_pred))
+print("Confusion matrix:")
+print(confusion_matrix(df_y_train, logreg_ridge_y_pred, labels=["Ia", "Ib", "II", "nonevent"]))
+
+print()
+print("Logistic Regression (Lasso):")
+print(f"Score: {logreg_lasso_scores.mean():.3f} (std {logreg_lasso_scores.std():.3f})")
+print("Classification report:")
+print(classification_report(df_y_train, logreg_lasso_y_pred))
+print("Confusion matrix:")
+print(confusion_matrix(df_y_train, logreg_lasso_y_pred, labels=["Ia", "Ib", "II", "nonevent"]))
+
+print()
+print("Random Forest:")
+print(f"Score: {rf_scores.mean():.3f} (std {rf_scores.std():.3f})")
+print("Classification report:")
+print(classification_report(df_y_train, rf_y_pred))
+print("Confusion matrix:")
+print(confusion_matrix(df_y_train, rf_y_pred, labels=["Ia", "Ib", "II", "nonevent"]))
+```
+
+```text
+Logistic Regression (Ridge):
+Score: 0.651 (std 0.041)
+Classification report:
+              precision    recall  f1-score   support
+
+          II       0.51      0.52      0.51       117
+          Ia       0.22      0.19      0.20        26
+          Ib       0.44      0.40      0.42        82
+    nonevent       0.85      0.88      0.87       225
+
+    accuracy                           0.66       450
+   macro avg       0.50      0.50      0.50       450
+weighted avg       0.65      0.66      0.66       450
+
+Confusion matrix:
+[[  5  12   5   4]
+ [  8  33  34   7]
+ [  7  26  61  23]
+ [  3   4  20 198]]
+
+Logistic Regression (Lasso):
+Score: 0.656 (std 0.020)
+Classification report:
+              precision    recall  f1-score   support
+
+          II       0.49      0.59      0.53       117
+          Ia       0.25      0.19      0.22        26
+          Ib       0.42      0.29      0.35        82
+    nonevent       0.87      0.89      0.88       225
+
+    accuracy                           0.66       450
+   macro avg       0.51      0.49      0.49       450
+weighted avg       0.65      0.66      0.65       450
+
+Confusion matrix:
+[[  5   9   8   4]
+ [  5  24  46   7]
+ [  7  21  69  20]
+ [  3   3  19 200]]
+
+Random Forest:
+Score: 0.647 (std 0.008)
+Classification report:
+              precision    recall  f1-score   support
+
+          II       0.47      0.50      0.48       117
+          Ia       0.20      0.04      0.06        26
+          Ib       0.38      0.37      0.37        82
+    nonevent       0.83      0.90      0.87       225
+
+    accuracy                           0.65       450
+   macro avg       0.47      0.45      0.45       450
+weighted avg       0.62      0.65      0.63       450
+
+Confusion matrix:
+[[  1  13   7   5]
+ [  2  30  43   7]
+ [  2  29  58  28]
+ [  0   8  15 202]]
+```
+
+- Nonevent is reliable: 87-90% recall, 85% precision
+- Ia remains the hardest class: Only 4-19% recall
+- Ib and II are frequently confused: 34-46 Ib predicted as II across models
+- Ridge has best Ia performance: 5 correct (19% recall) vs Random Forest 1 correct (4%)
+- Lasso predicts II most aggressively: Highest II recall (59%) but lowest Ib recall (29%)
+- Random Forest has lowest variance (std 0.008) but worst overall class balance
+
+#### 5.2.2 Submission
+
+The accuracy was poor, but let's see what score we get with Logistic Regression with Ridge that showd the best per-class balance.
+
+```python
+df_x_train = df_train[features]
+df_y_train = df_train["class4"]
+df_x_test = df_test[features]
+
+model = Pipeline(
+    [
+        ("scaler", StandardScaler()),
+        ("clf", LogisticRegression(penalty="l1", solver="saga", C=1.0, max_iter=5000)),
+    ]
+)
+
+model.fit(df_x_train, df_y_train)
+
+probs = model.predict_proba(df_x_test)
+class4_pred = model.predict(df_x_test)
+
+p_event = 1 - probs[:, list(model.classes_).index("nonevent")]
+
+submission = pd.DataFrame({"id": df_test["id"], "class4": class4_pred, "p": p_event})
+submission.to_csv("./data/submission2.csv", index=False)
+```
+
+#### 5.2.3 Result
+
+Kaggle Score: 0.75238
+
+Slightly worse than Submission #1.
+
 
 ## 6. Discussion and Next Steps
 
