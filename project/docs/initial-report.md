@@ -697,6 +697,28 @@ Kaggle Score: 0.76921
 
 YES!
 
+### 5.4 Submission 4
+
+#### 5.4.1 Approach
+
+Hyperparameter tuning on C parameter for both stages:
+- Binary tested 0.01, 0.1, 0.5, 1.0, 2.0, 10.0, best was C=0.5 (0.893 vs 0.891)
+- Events tested same range, best was C=0.1 (0.591 vs 0.551)
+
+#### 5.4.2 Result
+
+Kaggle Score: 0.76162
+
+### 5.5 Submission 5
+
+#### 5.5.1 Approach
+
+Focused on optimizing perplexity of the score formula.
+
+#### 5.5.2 Result
+
+Kaggle Score: worse than submission 0.76714
+
 ## 6. Discussion and Next Steps
 
 ## References
