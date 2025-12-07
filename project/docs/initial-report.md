@@ -701,9 +701,61 @@ YES!
 
 #### 5.4.1 Approach
 
-Hyperparameter tuning on C parameter for both stages:
-- Binary tested 0.01, 0.1, 0.5, 1.0, 2.0, 10.0, best was C=0.5 (0.893 vs 0.891)
-- Events tested same range, best was C=0.1 (0.591 vs 0.551)
+Optimize the parameter C for both stages.
+
+First for stage 1:
+
+```python
+cv = StratifiedKFold(n_splits=5, shuffle=True)
+
+print("stage 1")
+for c in [0.01, 0.1, 0.5, 1.0, 2.0, 10.0]:
+    model = Pipeline([
+        ("scaler", StandardScaler()),
+        ("clf", LogisticRegression(penalty="l1", solver="saga", C=c, max_iter=10000)),
+    ])
+    scores = cross_val_score(model, df_x_train, df_y_train_binary, cv=cv, scoring="accuracy")
+    print(f"C={c}: {scores.mean():.3f} (std {scores.std():.3f})")
+```
+
+```text
+stage 1
+C=0.01: 0.831 (std 0.030)
+C=0.1: 0.871 (std 0.023)
+C=0.5: 0.893 (std 0.019)
+C=1.0: 0.893 (std 0.042)
+C=2.0: 0.887 (std 0.019)
+C=10.0: 0.878 (std 0.038)
+```
+
+Then for stage 2:
+
+```python
+event_mask = df_train["class4"] != "nonevent"
+df_x_train_events = df_train.loc[event_mask, features]
+df_y_train_events = df_train.loc[event_mask, "class4"]
+
+print("stage 2")
+for c in [0.01, 0.1, 0.5, 1.0, 2.0, 10.0]:
+    model = Pipeline([
+        ("scaler", StandardScaler()),
+        ("clf", LogisticRegression(penalty="l2", C=c, max_iter=10000)),
+    ])
+    scores = cross_val_score(model, df_x_train_events, df_y_train_events, cv=cv, scoring="accuracy")
+    print(f"C={c}: {scores.mean():.3f} (std {scores.std():.3f})")
+```
+
+```text
+stage 2
+C=0.01: 0.547 (std 0.062)
+C=0.1: 0.591 (std 0.033)
+C=0.5: 0.560 (std 0.065)
+C=1.0: 0.564 (std 0.033)
+C=2.0: 0.538 (std 0.033)
+C=10.0: 0.516 (std 0.033)
+```
+
+Based on the results, let's try 0.5 for stage 1 and 0.1 for stage 2.
 
 #### 5.4.2 Result
 
@@ -713,12 +765,73 @@ Kaggle Score: 0.76162
 
 #### 5.5.1 Approach
 
-Focused on optimizing perplexity of the score formula.
+Let's try to opimize for perplexity.
 
-#### 5.5.2 Result
+#### 5.5.2 Submission
 
-Kaggle Score: worse than submission 0.76714
+```python
+from sklearn.calibration import CalibratedClassifierCV
 
-## 6. Discussion and Next Steps
+scaler = StandardScaler()
+df_x_train_scaled = scaler.fit_transform(df_x_train)
+df_x_test_scaled = scaler.transform(df_x_test)
 
-## References
+base_model = LogisticRegression(penalty="l1", solver="saga", C=1.0, max_iter=5000)
+binary_model = CalibratedClassifierCV(base_model, cv=5, method="sigmoid")
+binary_model.fit(df_x_train_scaled, df_y_train_binary)
+
+event_mask = df_train["class4"] != "nonevent"
+df_x_train_events = df_train.loc[event_mask, features]
+df_y_train_events = df_train.loc[event_mask, "class4"]
+
+event_model = Pipeline([
+    ("scaler", StandardScaler()),
+    ("clf", LogisticRegression(penalty="l2", C=1.0, max_iter=5000)),
+])
+event_model.fit(df_x_train_events, df_y_train_events)
+
+p_event = binary_model.predict_proba(df_x_test_scaled)[:, 1]
+binary_pred = (p_event > 0.5).astype(int)
+event_pred = event_model.predict(df_x_test)
+
+class4_pred = []
+for i in range(len(df_x_test)):
+    if binary_pred[i] == 0:
+        class4_pred.append("nonevent")
+    else:
+        class4_pred.append(event_pred[i])
+
+submission = pd.DataFrame({"id": df_test["id"], "class4": class4_pred, "p": p_event})
+submission.to_csv("./data/submission5.csv", index=False)
+```
+
+#### 5.5.3 Result
+
+Kaggle Score: 0.76714
+
+The calibration did not improve results.
+
+## 6. Discussion
+
+### 6.1 What Worked
+
+- The two-stage worked really well
+- Lasso handles redundant features well
+- Simple logistic regression was most effective with the small training set
+
+### What Didn't Work
+
+- Hyperparameter tuning
+- Calibration
+- Other models like Random Forest and Gradient Boosting
+
+### Potential Improvements
+
+- Interaction terms
+- Ensemble: Combining multiple models
+- More models like XGBoost
+
+### Reflection on Performance
+
+Our best score is 0.76921 and 13 on the leaderboard.
+The main bottleneck is multi-class.
