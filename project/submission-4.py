@@ -19,7 +19,7 @@ df_y_train_binary = (df_train["class4"] != "nonevent").astype(int)
 binary_model = Pipeline(
     [
         ("scaler", StandardScaler()),
-        ("clf", LogisticRegression(penalty="l1", solver="saga", C=0.5, max_iter=5000)),
+        ("clf", LogisticRegression(penalty="l1", solver="saga", C=0.5, max_iter=10000)),
     ]
 )
 binary_model.fit(df_x_train, df_y_train_binary)
@@ -31,7 +31,7 @@ df_y_train_events = df_train.loc[event_mask, "class4"]
 event_model = Pipeline(
     [
         ("scaler", StandardScaler()),
-        ("clf", LogisticRegression(penalty="l2", C=0.1, max_iter=5000)),
+        ("clf", LogisticRegression(penalty="l2", C=0.01, max_iter=10000)),
     ]
 )
 event_model.fit(df_x_train_events, df_y_train_events)
