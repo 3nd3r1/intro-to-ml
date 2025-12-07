@@ -25,7 +25,7 @@ df_test = pd.read_csv("./data/test.csv")
 Let's look at some basic information:
 
 ```python
-print(f"taining samples: {len(df_train)}")
+print(f"training samples: {len(df_train)}")
 print(f"test samples: {len(df_test)}")
 print(f"number of features: {df_train.shape[1]}")
 print(f"first rows: \n{df_train.head()}")
