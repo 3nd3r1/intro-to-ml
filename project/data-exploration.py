@@ -56,7 +56,7 @@ example_features = [
 ]
 
 print("summary of features:")
-print(df_train[example_features].describe().T)
+print(df_train[example_features].describe().T.to_latex(escape=True, index=True, float_format="%.3f"))
 
 # Feature correlation
 
