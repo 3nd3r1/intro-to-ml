@@ -12,9 +12,9 @@ print(f"first rows: \n{df_train.head()}")
 
 # Class distribution
 print("class4 distribution:")
-print(df_train["class4"].value_counts())
+print(df_train["class4"].value_counts().to_latex())
 print("class4 proportion:")
-print(df_train["class4"].value_counts(normalize=True).round(3))
+print(df_train["class4"].value_counts(normalize=True).round(3).to_latex())
 
 # Feature stats
 
